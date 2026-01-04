@@ -18,10 +18,16 @@ import matplotlib.pyplot as plt
 from rembg import remove
 import io
 import os
-from pytorch_grad_cam import GradCAM
-from pytorch_grad_cam.utils.image import show_cam_on_image
-from pytorch_grad_cam.utils.model_targets import ClassifierOutputTarget
 import torchvision.transforms as transforms
+
+# Try to import GradCAM - it's optional
+try:
+    from pytorch_grad_cam import GradCAM
+    from pytorch_grad_cam.utils.image import show_cam_on_image
+    from pytorch_grad_cam.utils.model_targets import ClassifierOutputTarget
+    GRADCAM_AVAILABLE = True
+except ImportError:
+    GRADCAM_AVAILABLE = False
 
 # Page configuration
 st.set_page_config(
@@ -169,6 +175,9 @@ def preprocess_image(image, img_size=640):
 
 def generate_gradcam(model, image, pred_class):
     """Generate GradCAM visualization"""
+    if not GRADCAM_AVAILABLE:
+        return None, None
+    
     try:
         # Get PyTorch model
         pytorch_model = model.model
@@ -367,37 +376,46 @@ def main():
                             # Generate GradCAM
                             st.markdown('<div class="sub-header">GradCAM Visualization</div>', unsafe_allow_html=True)
                             
-                            with st.spinner("Generating GradCAM..."):
-                                heatmap, overlay = generate_gradcam(model, processed_image, pred_class)
+                            if not GRADCAM_AVAILABLE:
+                                st.info("""
+                                **GradCAM Not Available**  
+                                The GradCAM visualization library is not installed in this environment.
+                                GradCAM helps visualize which parts of the leaf the model focuses on for predictions.
                                 
-                                if heatmap is not None and overlay is not None:
-                                    # Display GradCAM results
-                                    col_a, col_b, col_c = st.columns(3)
+                                To enable GradCAM locally, install: `pip install pytorch-grad-cam`
+                                """)
+                            else:
+                                with st.spinner("Generating GradCAM..."):
+                                    heatmap, overlay = generate_gradcam(model, processed_image, pred_class)
                                     
-                                    with col_a:
-                                        st.markdown("**Original**")
-                                        st.image(processed_image, use_container_width=True)
-                                    
-                                    with col_b:
-                                        st.markdown("**Heatmap**")
-                                        fig_heat, ax_heat = plt.subplots()
-                                        ax_heat.imshow(heatmap, cmap='jet')
-                                        ax_heat.axis('off')
-                                        st.pyplot(fig_heat)
-                                        plt.close()
-                                    
-                                    with col_c:
-                                        st.markdown("**GradCAM Overlay**")
-                                        st.image(overlay, use_container_width=True)
-                                    
-                                    st.info("""
-                                    **GradCAM Explanation:**  
-                                    The heatmap shows which regions of the leaf the model focused on to make its prediction. 
-                                    Warmer colors (red/yellow) indicate areas of high importance, while cooler colors (blue) 
-                                    indicate less important regions.
-                                    """)
-                                else:
-                                    st.warning("Could not generate GradCAM visualization")
+                                    if heatmap is not None and overlay is not None:
+                                        # Display GradCAM results
+                                        col_a, col_b, col_c = st.columns(3)
+                                        
+                                        with col_a:
+                                            st.markdown("**Original**")
+                                            st.image(processed_image, use_container_width=True)
+                                        
+                                        with col_b:
+                                            st.markdown("**Heatmap**")
+                                            fig_heat, ax_heat = plt.subplots()
+                                            ax_heat.imshow(heatmap, cmap='jet')
+                                            ax_heat.axis('off')
+                                            st.pyplot(fig_heat)
+                                            plt.close()
+                                        
+                                        with col_c:
+                                            st.markdown("**GradCAM Overlay**")
+                                            st.image(overlay, use_container_width=True)
+                                        
+                                        st.info("""
+                                        **GradCAM Explanation:**  
+                                        The heatmap shows which regions of the leaf the model focused on to make its prediction. 
+                                        Warmer colors (red/yellow) indicate areas of high importance, while cooler colors (blue) 
+                                        indicate less important regions.
+                                        """)
+                                    else:
+                                        st.warning("Could not generate GradCAM visualization")
             else:
                 st.error("Model could not be loaded. Please check the model path.")
         else:
