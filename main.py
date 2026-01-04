@@ -82,7 +82,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Constants
-MODEL_PATH = "yolo_training_artifacts/yolov8_leaf_disease/weights/best.pt"
+MODEL_PATH = "best.pt"
 IMG_SIZE = 640
 CLASS_NAMES = ['burn resize', 'healthy resize', 'red rust resize', 'spot resize']
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
