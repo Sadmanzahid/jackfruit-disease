@@ -214,9 +214,18 @@ def generate_gradcam(model, image, pred_class):
 def predict_image(model, image):
     """Make prediction on image"""
     try:
+        # Convert RGBA to RGB if necessary (for images with transparency)
+        if image.mode == 'RGBA':
+            # Create a white background
+            background = Image.new('RGB', image.size, (255, 255, 255))
+            background.paste(image, mask=image.split()[3])  # Use alpha channel as mask
+            image = background
+        elif image.mode != 'RGB':
+            image = image.convert('RGB')
+        
         # Save temporary image
         temp_path = "temp_prediction.jpg"
-        image.save(temp_path)
+        image.save(temp_path, 'JPEG')
         
         # Get prediction
         results = model(temp_path, verbose=False)
